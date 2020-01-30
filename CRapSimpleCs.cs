@@ -686,7 +686,7 @@ namespace RapSimpleCs
 							int nps = 0;
 							if (t > 0)
 								nps = Convert.ToInt32((g_totalNodes / t) * 1000);
-							Console.WriteLine("info currmove " + bsFm + " currmovenumber " + n + " nodes " + g_totalNodes + " time " + t + " nps " + nps + " depth " + depthL + " seldepth " + alphaDe + " score " + g_scoreFm + " pv " + bsPv);
+							Console.WriteLine("info currmove " + bsFm + " currmovenumber " + n + " nodes " + g_totalNodes + " time " + t /*+ " nps " + nps*/ + " depth " + depthL + " seldepth " + alphaDe + " score " + g_scoreFm + " pv " + bsPv);
 						}
 					}
 					if (alpha >= beta) break;
