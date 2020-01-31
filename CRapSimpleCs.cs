@@ -238,7 +238,7 @@ namespace RapSimpleCs
 				int pieceM = 0;
 				int pieceN = 0;
 				int pieceB = 0;
-				List<int> moves = new List<int>();
+				List<int> moves = new List<int>(64);
 				for (int n = 0; n < 64; n++)
 				{
 					int fr = arrField[n];
@@ -721,7 +721,7 @@ namespace RapSimpleCs
 					adjMobility = myMobility;
 					GetScore(mu, 1, depthCur++, -0xffff, 0xffff);
 					int m = mu[bsIn];
-					mu.Remove(bsIn);
+					mu.RemoveAt(bsIn);
 					mu.Add(m);
 				} while (((depth == 0) || (depth > depthCur - 1)) && (bsDepth >= depthCur - 1) && !g_stop && (mu.Count > 1));
 				double t = stopwatch.Elapsed.TotalMilliseconds;
