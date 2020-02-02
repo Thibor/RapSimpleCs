@@ -222,10 +222,14 @@ namespace RapSimpleCs
 			void GenerateMove(List<int> moves, int fr, int to, bool add, int flag)
 			{
 				g_countMove++;
-				if (((g_board[to] & 7) == pieceKing) || (((boardCheck[to] & g_lastCastle) == g_lastCastle) && ((g_lastCastle & maskCastle) > 0)))
+				int rank = g_board[to] & 7;
+				if ((rank == pieceKing) || (((boardCheck[to] & g_lastCastle) == g_lastCastle) && ((g_lastCastle & maskCastle) > 0)))
 					g_inCheck = true;
 				else if (add)
-					moves.Add(fr | (to << 8) | flag);
+					if (rank > 0)
+						moves.Add(fr | (to << 8) | flag);
+					else
+						moves.Insert(0, fr | (to << 8) | flag);
 			}
 
 			List<int> GenerateAllMoves(bool wt, bool attack)
@@ -656,7 +660,7 @@ namespace RapSimpleCs
 						myMoves--;
 						osScore = -0xffff;
 					}
-					else if ((g_move50 > 99) || IsRepetition() || ((myInsufficient || osScore < 0) && adjInsufficient && (ply >1)))
+					else if ((g_move50 > 99) || IsRepetition() || ((myInsufficient || osScore < 0) && adjInsufficient && (ply > 1)))
 						osScore = 0;
 					else if (ply < depthL)
 						osScore = -GetScore(me, ply + 1, depthL, -beta, -alpha);
@@ -719,18 +723,19 @@ namespace RapSimpleCs
 				{
 					adjInsufficient = myInsufficient;
 					adjMobility = myMobility;
-					GetScore(mu, 1, depthCur++, -0xffff, 0xffff);
+					GetScore(mu, 1, depthCur, -0xffff, 0xffff);
 					int m = mu[bsIn];
 					mu.RemoveAt(bsIn);
 					mu.Add(m);
+					double t = stopwatch.Elapsed.TotalMilliseconds;
+					int nps = 0;
+					if (t > 0)
+						nps = Convert.ToInt32((g_totalNodes / t) * 1000);
+					Console.WriteLine($"info depth {depthCur} nodes {g_totalNodes} time {t} nps {nps} {mu.Count}");
+					depthCur++;
 				} while (((depth == 0) || (depth > depthCur - 1)) && (bsDepth >= depthCur - 1) && !g_stop && (mu.Count > 1));
-				double t = stopwatch.Elapsed.TotalMilliseconds;
-				int nps = 0;
-				if (t > 0)
-					nps = Convert.ToInt32((g_totalNodes / t) * 1000);
 				string[] ponder = bsPv.Split(' ');
 				string pm = ponder.Length > 1 ? " ponder " + ponder[1] : "";
-				Console.WriteLine("info nodes " + g_totalNodes + " time " + t + " nps " + nps);
 				Console.WriteLine("bestmove " + bsFm + pm);
 			}
 
