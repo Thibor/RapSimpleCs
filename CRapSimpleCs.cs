@@ -1082,10 +1082,6 @@ namespace RapSimpleCs
 
 			Initialize();
 
-			//InitializeFromFen("r1bq1rk1/1p2bppp/p1np4/2nNp3/2P1P3/3BB3/PPN2PPP/R2QK2R b KQ - 10 12 ");
-			//GetColorScore(true);
-
-
 			while (true)
 			{
 				string msg = CReader.ReadLine(true);
