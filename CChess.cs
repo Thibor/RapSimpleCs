@@ -24,7 +24,6 @@ namespace RapSimpleCs
 		const int moveflagPromoteBishop = 0x40 << 16;
 		const int moveflagPromoteKnight = 0x80 << 16;
 		const int maskCastle = moveflagCastleKing | moveflagCastleQueen;
-		public int optRandom = 0;
 		int g_castleRights = 0xf;
 		int g_depth = 0;
 		int g_hash = 0;
@@ -1051,19 +1050,9 @@ namespace RapSimpleCs
 				Console.WriteLine($"info depth {depthCur} nodes {g_totalNodes} time {t} nps {nps}");
 				depthCur++;
 			} while (((depth == 0) || (depth > depthCur - 1)) && (os > -0xf000) && (os < 0xf000) && !g_stop);
-			int r = random.Next(100);
-			if (optRandom > r)
-			{
-				r = random.Next(mu.Count);
-				bsFm = FormatMove(mu[r]);
-				Console.WriteLine($"bestmove {bsFm}");
-			}
-			else
-			{
-				string[] ponder = bsPv.Split(' ');
-				string pm = ponder.Length > 1 ? " ponder " + ponder[1] : "";
-				Console.WriteLine($"bestmove {bsFm}{pm}");
-			}
+			string[] ponder = bsPv.Split(' ');
+			string pm = ponder.Length > 1 ? $" ponder {ponder[1]}" : "";
+			Console.WriteLine($"bestmove {bsFm}{pm}");
 		}
 
 	}

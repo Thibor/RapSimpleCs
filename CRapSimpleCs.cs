@@ -77,11 +77,6 @@ namespace RapSimpleCs
 						}
 						Chess.Search(depth, time, node);
 						break;
-					case "setoption":
-						int i = Uci.GetIndex("random", 0);
-						if (i > 0)
-							Chess.optRandom = Convert.ToInt32(Uci.tokens[i]);
-						break;
 					case "quit":
 						return;
 				}

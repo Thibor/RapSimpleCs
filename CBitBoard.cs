@@ -24,13 +24,5 @@ namespace RapSimpleCs
 			board &= (ulong)~(1 << index);
 		}
 
-		public static ulong FlipY(ulong board)
-		{
-			ulong result = 0;
-			for (int n = 0; n < 8; n++)
-				result |= ((board >> (n * 8)) & 0xff) << ((7 - n) * 8);
-			return result;
-		}
-
 	}
 }
