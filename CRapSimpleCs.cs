@@ -3,8 +3,7 @@
 namespace RapSimpleCs
 {
 	class CRapSimpleCs
-	{
-		
+	{	
 		static void Main()
 		{
 			string version = "2020-02-02";
@@ -20,7 +19,6 @@ namespace RapSimpleCs
 					case "uci":
 						Console.WriteLine("id name RapSimpleCs " + version);
 						Console.WriteLine("id author Thibor Raven");
-						Console.WriteLine("option name random type spin default 0 min 0 max 100");
 						Console.WriteLine("uciok");
 						break;
 					case "isready":
@@ -75,7 +73,7 @@ namespace RapSimpleCs
 							double mg = Uci.GetInt("movestogo", 32);
 							time = Convert.ToInt32((ct / mg) + ci - 0xff);
 						}
-						Chess.Search(depth, time, node);
+						Chess.Start(depth, time, node);
 						break;
 					case "quit":
 						return;

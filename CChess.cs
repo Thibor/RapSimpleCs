@@ -34,6 +34,7 @@ namespace RapSimpleCs
 		int g_totalNodes = 0;
 		int g_nodeout = 0;
 		int g_timeout = 0;
+		int g_mainDepth = 1;
 		bool g_stop = false;
 		string g_pv = "";
 		string g_scoreFm = "";
@@ -46,6 +47,7 @@ namespace RapSimpleCs
 		int[] boardCheck = new int[256];
 		int[] boardCastle = new int[256];
 		public bool whiteTurn = true;
+		int bestRank = 0;
 		int usColor = 0;
 		int enColor = 0;
 		int eeColor = 0;
@@ -447,15 +449,25 @@ namespace RapSimpleCs
 
 		void AddMove(List<int> moves, int fr, int to, int flag)
 		{
-			if (((g_board[to] & 7) > 0) || ((flag & moveflagPassing) > 0))
-				moves.Add(fr | (to << 8) | flag);
+			int rank = g_board[to] & 7;
+			if ((rank > 0) || ((flag & moveflagPassing) > 0))
+			{
+				if (bestRank <= rank)
+				{
+					bestRank = rank;
+					moves.Insert(0, fr | (to << 8) | flag);
+				}
+				else
+					moves.Insert(1, fr | (to << 8) | flag);
+			}
 			else
-				moves.Insert(0, fr | (to << 8) | flag);
+				moves.Add(fr | (to << 8) | flag);
 		}
 
 		int GetColorScore(bool wt, List<int> moves = null)
 		{
 			lastScore = 0;
+			bestRank = 0;
 			int pieceM = 0;
 			int pieceN = 0;
 			int pieceB = 0;
@@ -567,6 +579,7 @@ namespace RapSimpleCs
 
 		List<int> GenerateAllMoves(bool wt)
 		{
+			bestRank = 0;
 			usColor = wt ? colorWhite : colorBlack;
 			enColor = wt ? colorBlack : colorWhite;
 			eeColor = enColor | colorEmpty;
@@ -920,28 +933,30 @@ namespace RapSimpleCs
 			return alpha;
 		}
 
-		int GetScore(List<int> mu, int ply, int depth, int alpha, int beta)
+		int Search(List<int> mu, int ply, int depth, int alpha, int beta)
 		{
-			int n = mu.Count;
-			int myMoves = n;
+			int countCheck = 0;
 			int alphaDe = 0;
 			string alphaFm = "";
 			string alphaPv = "";
 			int osScore = 0;
-
-			while (n-- > 0)
+			if (ply >= depth)
+				GetColorScore(whiteTurn);
+			bool usInsufficient = lastInsufficient;
+			int usScore = lastScore;
+			for(int n = 0;n < mu.Count;n++)
 			{
+				int cm = mu[n];
 				if ((++g_totalNodes & 0x1fff) == 0)
 				{
 					g_stop = ((depth > 1) && (((g_timeout > 0) && (stopwatch.Elapsed.TotalMilliseconds > g_timeout)) || ((g_nodeout > 0) && (g_totalNodes > g_nodeout)))) || (CReader.ReadLine(false) == "stop");
 				}
-				int cm = mu[n];
 				MakeMove(cm);
 				g_depth = 0;
 				g_pv = "";
 				osScore = -0xffff;
 				if (IsAttacked(!whiteTurn, kingPos))
-					myMoves--;
+					countCheck++;
 				else if ((g_move50 > 99) || IsRepetition())
 					osScore = 0;
 				else
@@ -949,13 +964,10 @@ namespace RapSimpleCs
 					if (ply < depth)
 					{
 						List<int> me = GenerateAllMoves(whiteTurn);
-						osScore = -GetScore(me, ply + 1, depth, -beta, -alpha);
+						osScore = -Search(me, ply + 1, depth, -beta, -alpha);
 					}
 					else
-					{
-						GetColorScore(!whiteTurn);
-						osScore = -Quiesce(1, depth, -beta, -alpha, lastInsufficient, lastScore);
-					}
+						osScore = -Quiesce(1, depth, -beta, -alpha, usInsufficient, usScore);
 				}
 				UnmakeMove(cm);
 				if (g_stop) return -0xffff;
@@ -981,12 +993,12 @@ namespace RapSimpleCs
 						int nps = 0;
 						if (t > 0)
 							nps = Convert.ToInt32((g_totalNodes / t) * 1000);
-						Console.WriteLine("info currmove " + bsFm + " currmovenumber " + bsIn + " nodes " + g_totalNodes + " time " + t + " nps " + nps + " depth " + depth + " seldepth " + alphaDe + " score " + g_scoreFm + " pv " + bsPv);
+						Console.WriteLine("info currmove " + bsFm + " currmovenumber " + (n + 1) + " nodes " + g_totalNodes + " time " + t + " nps " + nps + " depth " + g_mainDepth + " seldepth " + alphaDe + " score " + g_scoreFm + " pv " + bsPv);
 					}
 				}
 				if (alpha >= beta) break;
 			}
-			if (myMoves == 0)
+			if (countCheck == mu.Count)
 				if (IsAttacked(whiteTurn, kingPos))
 					alpha = -0xffff + ply;
 				else
@@ -996,10 +1008,10 @@ namespace RapSimpleCs
 			return alpha;
 		}
 
-		public void Search(int depth, int time, int nodes)
+		public void Start(int depth, int time, int nodes)
 		{
-			GetColorScore(!whiteTurn);
-			int enScore = lastScore;
+			int enScore = GetColorScore(!whiteTurn);
+			int usScore = GetColorScore(whiteTurn);
 			List<int> mu = GenerateLegalMoves(whiteTurn);
 			if (mu.Count == 0)
 			{
@@ -1012,9 +1024,8 @@ namespace RapSimpleCs
 				Console.WriteLine($"bestmove {bsFm}");
 				return;
 			}
-			int score = lastScore - enScore;
-			int del = 0x40;
-			int depthCur = 1;
+			int score = usScore - enScore;
+			int del = 0x20;
 			g_stop = false;
 			g_totalNodes = 0;
 			g_timeout = time;
@@ -1022,13 +1033,15 @@ namespace RapSimpleCs
 			int alpha = score - del;
 			int beta = score + del;
 			int os = 0;
+			g_mainDepth = 1;
 			do
 			{
-				os = GetScore(mu, 1, depthCur, alpha, beta);
-				if ((os > alpha) && (os < beta))
+				bsDepth = 0;
+				os = Search(mu, 1, g_mainDepth, alpha, beta);
+				if(bsDepth>=g_mainDepth)
 				{
 					score = os;
-					if (del > 0x40)
+					if (del > 0x20)
 						del = (del >> 1);
 					alpha = score - del;
 					beta = score + del;
@@ -1042,14 +1055,14 @@ namespace RapSimpleCs
 				}
 				int m = mu[bsIn];
 				mu.RemoveAt(bsIn);
-				mu.Add(m);
+				mu.Insert(0,m);
 				double t = stopwatch.Elapsed.TotalMilliseconds;
 				int nps = 0;
 				if (t > 0)
 					nps = Convert.ToInt32((g_totalNodes / t) * 1000);
-				Console.WriteLine($"info depth {depthCur} nodes {g_totalNodes} time {t} nps {nps}");
-				depthCur++;
-			} while (((depth == 0) || (depth > depthCur - 1)) && (os > -0xf000) && (os < 0xf000) && !g_stop);
+				Console.WriteLine($"info depth {g_mainDepth} nodes {g_totalNodes} time {t} nps {nps}");
+				g_mainDepth++;
+			} while (((depth == 0) || (depth >= g_mainDepth)) && (os > -0xf000) && (os < 0xf000) && !g_stop);
 			string[] ponder = bsPv.Split(' ');
 			string pm = ponder.Length > 1 ? $" ponder {ponder[1]}" : "";
 			Console.WriteLine($"bestmove {bsFm}{pm}");
