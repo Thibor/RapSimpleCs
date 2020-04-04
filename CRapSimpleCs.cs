@@ -6,7 +6,7 @@ namespace RapSimpleCs
 	{	
 		static void Main()
 		{
-			string version = "2020-02-02";
+			string version = "2020-04-04";
 			CUci Uci = new CUci();
 			CChess Chess = new CChess();
 
@@ -70,7 +70,13 @@ namespace RapSimpleCs
 						{
 							double ct = Chess.whiteTurn ? Uci.GetInt("wtime", 0) : Uci.GetInt("btime", 0);
 							double mg = Uci.GetInt("movestogo", 32);
-							time = Convert.ToInt32(ct / (mg + 1));
+							time = Convert.ToInt32(ct / mg);
+						}
+						if (time > 0)
+						{
+							time -= 0x20;
+							if (time < 1)
+								time = 1;
 						}
 						Chess.Start(depth, time, node);
 						break;

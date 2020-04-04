@@ -51,7 +51,6 @@ namespace RapSimpleCs
 		int usColor = 0;
 		int enColor = 0;
 		int eeColor = 0;
-		int bsIn = -1;
 		int bsDepth = 0;
 		string bsFm = "";
 		string bsPv = "";
@@ -765,7 +764,7 @@ namespace RapSimpleCs
 				g_board[capi] = colorEmpty;
 				CBitBoard.Del(ref bitBoard[(enColor | piecePawn) & 0xf], arrFieldS[capi]);
 			}
-			CUndo undo = undoStack[undoIndex++];
+			ref CUndo undo = ref undoStack[undoIndex++];
 			undo.captured = captured;
 			undo.hash = g_hash;
 			undo.passing = g_passing;
@@ -939,38 +938,39 @@ namespace RapSimpleCs
 			int alphaDe = 0;
 			string alphaFm = "";
 			string alphaPv = "";
-			int osScore = 0;
-			if (ply >= depth)
+			bool isCheck = IsAttacked(whiteTurn, kingPos);
+			if (depth <= 0)
+			{
 				GetColorScore(whiteTurn);
+				if (isCheck)
+					depth++;
+			}
 			bool usInsufficient = lastInsufficient;
 			int usScore = lastScore;
-			for(int n = 0;n < mu.Count;n++)
+			for (int n = 0; n < mu.Count; n++)
 			{
 				int cm = mu[n];
 				if ((++g_totalNodes & 0x1fff) == 0)
 				{
-					g_stop = ((depth > 1) && (((g_timeout > 0) && (stopwatch.Elapsed.TotalMilliseconds > g_timeout)) || ((g_nodeout > 0) && (g_totalNodes > g_nodeout)))) || (CReader.ReadLine(false) == "stop");
+					g_stop = ((bsDepth > 0) && (((g_timeout > 0) && (stopwatch.Elapsed.TotalMilliseconds > g_timeout)) || ((g_nodeout > 0) && (g_totalNodes > g_nodeout)))) || (CReader.ReadLine(false) == "stop");
 				}
 				MakeMove(cm);
 				g_depth = 0;
 				g_pv = "";
-				osScore = -0xffff;
+				int osScore = -0xffff;
 				if (IsAttacked(!whiteTurn, kingPos))
 					countCheck++;
 				else if ((g_move50 > 99) || IsRepetition())
 					osScore = 0;
+				else if (depth <= 0)
+					osScore = -Quiesce(1, g_mainDepth, -beta, -alpha, usInsufficient, usScore);
 				else
 				{
-					if (ply < depth)
-					{
-						List<int> me = GenerateAllMoves(whiteTurn);
-						osScore = -Search(me, ply + 1, depth, -beta, -alpha);
-					}
-					else
-						osScore = -Quiesce(1, depth, -beta, -alpha, usInsufficient, usScore);
+					List<int> me = GenerateAllMoves(whiteTurn);
+					osScore = -Search(me, ply + 1, depth - 1, -beta, -alpha);
 				}
 				UnmakeMove(cm);
-				if (g_stop) return -0xffff;
+				if (g_stop) return 0;
 				if (alpha < osScore)
 				{
 					alpha = osScore;
@@ -985,7 +985,6 @@ namespace RapSimpleCs
 							g_scoreFm = "mate " + ((-0xfffe - osScore) >> 1);
 						else
 							g_scoreFm = "cp " + (osScore >> 2);
-						bsIn = n;
 						bsFm = alphaFm;
 						bsPv = alphaPv;
 						bsDepth = alphaDe;
@@ -994,12 +993,14 @@ namespace RapSimpleCs
 						if (t > 0)
 							nps = Convert.ToInt32((g_totalNodes / t) * 1000);
 						Console.WriteLine("info currmove " + bsFm + " currmovenumber " + (n + 1) + " nodes " + g_totalNodes + " time " + t + " nps " + nps + " depth " + g_mainDepth + " seldepth " + alphaDe + " score " + g_scoreFm + " pv " + bsPv);
+						mu.RemoveAt(n);
+						mu.Insert(0, cm);
 					}
 				}
 				if (alpha >= beta) break;
 			}
 			if (countCheck == mu.Count)
-				if (IsAttacked(whiteTurn, kingPos))
+				if (isCheck)
 					alpha = -0xffff + ply;
 				else
 					alpha = 0;
@@ -1010,8 +1011,6 @@ namespace RapSimpleCs
 
 		public void Start(int depth, int time, int nodes)
 		{
-			int enScore = GetColorScore(!whiteTurn);
-			int usScore = GetColorScore(whiteTurn);
 			List<int> mu = GenerateLegalMoves(whiteTurn);
 			if (mu.Count == 0)
 			{
@@ -1019,43 +1018,17 @@ namespace RapSimpleCs
 				return;
 			}
 			if (mu.Count == 1)
-			{
-				bsFm = FormatMove(mu[0]);
-				Console.WriteLine($"bestmove {bsFm}");
-				return;
-			}
-			int score = usScore - enScore;
-			int del = 0x20;
+				depth = 1;
 			g_stop = false;
 			g_totalNodes = 0;
 			g_timeout = time;
 			g_nodeout = nodes;
-			int alpha = score - del;
-			int beta = score + del;
-			int os = 0;
+			int os;
 			g_mainDepth = 1;
 			do
 			{
 				bsDepth = 0;
-				os = Search(mu, 1, g_mainDepth, alpha, beta);
-				if(bsDepth>=g_mainDepth)
-				{
-					score = os;
-					if (del > 0x20)
-						del = (del >> 1);
-					alpha = score - del;
-					beta = score + del;
-				}
-				else
-				{
-					del = (del << 1);
-					alpha = score - del;
-					beta = score + del;
-					if (!g_stop) continue;
-				}
-				int m = mu[bsIn];
-				mu.RemoveAt(bsIn);
-				mu.Insert(0,m);
+				os = Search(mu, 1, g_mainDepth, -0xffff, 0xffff);
 				double t = stopwatch.Elapsed.TotalMilliseconds;
 				int nps = 0;
 				if (t > 0)

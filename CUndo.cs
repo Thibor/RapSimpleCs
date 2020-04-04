@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace RapSimpleCs
+﻿namespace RapSimpleCs
 {
-	class CUndo
+	struct CUndo
 	{
 		public int captured;
 		public int hash;
