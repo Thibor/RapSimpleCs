@@ -30,7 +30,7 @@ namespace RapSimpleCs
 		int g_passing = 0;
 		public int g_move50 = 0;
 		int g_moveNumber = 0;
-		int g_phase = 32;
+		public int g_phase = 32;
 		int g_totalNodes = 0;
 		int g_nodeout = 0;
 		int g_timeout = 0;
@@ -50,7 +50,6 @@ namespace RapSimpleCs
 		int bestRank = 0;
 		int usColor = 0;
 		int enColor = 0;
-		int eeColor = 0;
 		int bsDepth = 0;
 		string bsFm = "";
 		string bsPv = "";
@@ -473,7 +472,6 @@ namespace RapSimpleCs
 			int w = wt ? 1 : 0;
 			usColor = wt ? colorWhite : colorBlack;
 			enColor = wt ? colorBlack : colorWhite;
-			eeColor = enColor | colorEmpty;
 			int colorShUs = usColor & 0xf;
 			int colorShEn = enColor & 0xf;
 			for (int y = 0; y < 8; y++)
@@ -581,7 +579,6 @@ namespace RapSimpleCs
 			bestRank = 0;
 			usColor = wt ? colorWhite : colorBlack;
 			enColor = wt ? colorBlack : colorWhite;
-			eeColor = enColor | colorEmpty;
 			List<int> moves = new List<int>(64);
 			for (int n = 0; n < 64; n++)
 			{
