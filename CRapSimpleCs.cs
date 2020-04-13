@@ -70,14 +70,19 @@ namespace RapSimpleCs
 						if ((time == 0) && (depth == 0) && (node == 0))
 						{
 							double ct = Chess.whiteTurn ? Uci.GetInt("wtime", 0) : Uci.GetInt("btime", 0);
-							double mg = Uci.GetInt("movestogo", Chess.g_phase);
+							double mg = Uci.GetInt("movestogo", Chess.g_phase << 1);
 							time = Convert.ToInt32(ct / mg);
+							if (time < 1)
+								time = 1;
 						}
 						if (time > 0)
 						{
 							time -= 0x20;
-							if (time < 1)
-								time = 1;
+							if (time < 0x20)
+							{
+								time = 0;
+								depth = 1;
+							}
 						}
 						Chess.Start(depth, time, node);
 						break;

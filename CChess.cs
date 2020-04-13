@@ -986,10 +986,10 @@ namespace RapSimpleCs
 						bsPv = alphaPv;
 						bsDepth = alphaDe;
 						double t = stopwatch.Elapsed.TotalMilliseconds;
-						int nps = 0;
+						double nps = 0;
 						if (t > 0)
-							nps = Convert.ToInt32((g_totalNodes / t) * 1000);
-						Console.WriteLine("info currmove " + bsFm + " currmovenumber " + (n + 1) + " nodes " + g_totalNodes + " time " + t + " nps " + nps + " depth " + g_mainDepth + " seldepth " + alphaDe + " score " + g_scoreFm + " pv " + bsPv);
+							nps = (g_totalNodes / t) * 1000;
+						Console.WriteLine("info currmove " + bsFm + " currmovenumber " + (n + 1) + " nodes " + g_totalNodes + " time " + Convert.ToInt64(t) + " nps " + Convert.ToInt64(nps) + " depth " + g_mainDepth + " seldepth " + alphaDe + " score " + g_scoreFm + " pv " + bsPv);
 						mu.RemoveAt(n);
 						mu.Insert(0, cm);
 					}
@@ -1027,10 +1027,10 @@ namespace RapSimpleCs
 				bsDepth = 0;
 				os = Search(mu, 1, g_mainDepth, -0xffff, 0xffff);
 				double t = stopwatch.Elapsed.TotalMilliseconds;
-				int nps = 0;
+				double nps = 0;
 				if (t > 0)
-					nps = Convert.ToInt32((g_totalNodes / t) * 1000);
-				Console.WriteLine($"info depth {g_mainDepth} nodes {g_totalNodes} time {t} nps {nps}");
+					nps =(g_totalNodes / t) * 1000;
+				Console.WriteLine($"info depth {g_mainDepth} nodes {g_totalNodes} time {Convert.ToInt64(t)} nps {Convert.ToInt64(nps)}");
 				g_mainDepth++;
 			} while (((depth == 0) || (depth >= g_mainDepth)) && (os > -0xf000) && (os < 0xf000) && !g_stop);
 			string[] ponder = bsPv.Split(' ');
