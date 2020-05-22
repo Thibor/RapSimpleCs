@@ -3,7 +3,7 @@
 namespace RapSimpleCs
 {
 	class CRapSimpleCs
-	{	
+	{
 		static void Main()
 		{
 			string version = "2020-04-04";
@@ -69,9 +69,9 @@ namespace RapSimpleCs
 						int node = Uci.GetInt("nodes", 0);
 						if ((time == 0) && (depth == 0) && (node == 0))
 						{
-							double ct = Chess.whiteTurn ? Uci.GetInt("wtime", 0) : Uci.GetInt("btime", 0);
+							time = Chess.whiteTurn ? Uci.GetInt("wtime", 0) : Uci.GetInt("btime", 0);
 							double mg = Uci.GetInt("movestogo", Chess.g_phase << 1);
-							time = Convert.ToInt32(ct / mg);
+							time = Convert.ToInt32(time / mg);
 							if (time < 1)
 								time = 1;
 						}
@@ -79,10 +79,7 @@ namespace RapSimpleCs
 						{
 							time -= 0x20;
 							if (time < 0x20)
-							{
-								time = 0;
-								depth = 1;
-							}
+								time = 1;
 						}
 						Chess.Start(depth, time, node);
 						break;

@@ -876,6 +876,11 @@ namespace RapSimpleCs
 			g_moveNumber--;
 		}
 
+		bool GetStop()
+		{
+			return ((g_timeout > 0) && (stopwatch.Elapsed.TotalMilliseconds > g_timeout)) || ((g_nodeout > 0) && (g_totalNodes > g_nodeout));
+		}
+
 		int Quiesce(int ply, int depth, int alpha, int beta, bool enInsufficient, int enScore)
 		{
 			List<int> mu = new List<int>(64);
@@ -895,7 +900,7 @@ namespace RapSimpleCs
 			while (index-- > 0)
 			{
 				if ((++g_totalNodes & 0x1fff) == 0)
-					g_stop = (((g_timeout > 0) && (stopwatch.Elapsed.TotalMilliseconds > g_timeout)) || ((g_nodeout > 0) && (g_totalNodes > g_nodeout)));
+					g_stop = GetStop();
 				int cm = mu[index];
 				MakeMove(cm);
 				g_depth = 0;
@@ -949,7 +954,7 @@ namespace RapSimpleCs
 				int cm = mu[n];
 				if ((++g_totalNodes & 0x1fff) == 0)
 				{
-					g_stop = ((bsDepth > 0) && (((g_timeout > 0) && (stopwatch.Elapsed.TotalMilliseconds > g_timeout)) || ((g_nodeout > 0) && (g_totalNodes > g_nodeout)))) || (CReader.ReadLine(false) == "stop");
+					g_stop = ((bsDepth > 0) && GetStop()) || (CReader.ReadLine(false) == "stop");
 				}
 				MakeMove(cm);
 				g_depth = 0;
@@ -1031,8 +1036,9 @@ namespace RapSimpleCs
 				if (t > 0)
 					nps =(g_totalNodes / t) * 1000;
 				Console.WriteLine($"info depth {g_mainDepth} nodes {g_totalNodes} time {Convert.ToInt64(t)} nps {Convert.ToInt64(nps)}");
-				g_mainDepth++;
-			} while (((depth == 0) || (depth >= g_mainDepth)) && (os > -0xf000) && (os < 0xf000) && !g_stop);
+				if (++g_mainDepth > 100)
+					break;
+			} while (!GetStop() && (os > -0xf000) && (os < 0xf000) && !g_stop);
 			string[] ponder = bsPv.Split(' ');
 			string pm = ponder.Length > 1 ? $" ponder {ponder[1]}" : "";
 			Console.WriteLine($"bestmove {bsFm}{pm}");
