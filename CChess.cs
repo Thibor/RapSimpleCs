@@ -1017,6 +1017,7 @@ namespace RapSimpleCs
 				Console.WriteLine($"info string no moves");
 				return;
 			}
+			int depthLimit = mu.Count == 1 ? 3 : 100;
 			g_stop = false;
 			g_totalNodes = 0;
 			g_timeout = time;
@@ -1033,7 +1034,7 @@ namespace RapSimpleCs
 				if (t > 0)
 					nps =(g_totalNodes / t) * 1000;
 				Console.WriteLine($"info depth {g_mainDepth} nodes {g_totalNodes} time {Convert.ToInt64(t)} nps {Convert.ToInt64(nps)}");
-				if (++g_mainDepth > 100)
+				if (++g_mainDepth > depthLimit)
 					break;
 			} while (!GetStop() && (os > -0xf000) && (os < 0xf000) && !g_stop);
 			string[] ponder = bsPv.Split(' ');
