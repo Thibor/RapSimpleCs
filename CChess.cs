@@ -32,8 +32,9 @@ namespace RapSimpleCs
 		int g_moveNumber = 0;
 		public int g_phase = 32;
 		int g_totalNodes = 0;
-		int g_nodeout = 0;
 		int g_timeout = 0;
+		int g_depthout = 0;
+		int g_nodeout = 0;
 		int g_mainDepth = 1;
 		bool g_stop = false;
 		string g_pv = "";
@@ -878,7 +879,7 @@ namespace RapSimpleCs
 
 		bool GetStop()
 		{
-			return ((g_timeout > 0) && (stopwatch.Elapsed.TotalMilliseconds > g_timeout)) || ((g_nodeout > 0) && (g_totalNodes > g_nodeout));
+			return ((g_timeout > 0) && (stopwatch.Elapsed.TotalMilliseconds > g_timeout)) || ((g_depthout > 0) && (g_mainDepth > g_depthout)) || ((g_nodeout > 0) && (g_totalNodes > g_nodeout));
 		}
 
 		int Quiesce(int ply, int depth, int alpha, int beta, bool enInsufficient, int enScore)
@@ -941,14 +942,8 @@ namespace RapSimpleCs
 			string alphaFm = "";
 			string alphaPv = "";
 			bool isCheck = IsAttacked(whiteTurn, kingPos);
-			if (depth <= 0)
-			{
-				GetColorScore(whiteTurn);
-				if (isCheck)
-					depth++;
-			}
-			bool usInsufficient = lastInsufficient;
-			int usScore = lastScore;
+			if (isCheck)
+				depth++;
 			for (int n = 0; n < mu.Count; n++)
 			{
 				int cm = mu[n];
@@ -965,7 +960,10 @@ namespace RapSimpleCs
 				else if ((g_move50 > 99) || IsRepetition())
 					osScore = 0;
 				else if (depth <= 0)
-					osScore = -Quiesce(1, g_mainDepth, -beta, -alpha, usInsufficient, usScore);
+				{
+					GetColorScore(!whiteTurn);
+					osScore = -Quiesce(1, g_mainDepth, -beta, -alpha, lastInsufficient, lastScore);
+				}
 				else
 				{
 					List<int> me = GenerateAllMoves(whiteTurn);
@@ -1019,18 +1017,19 @@ namespace RapSimpleCs
 				Console.WriteLine($"info string no moves");
 				return;
 			}
-			if (mu.Count == 1)
-				depth = 1;
 			g_stop = false;
 			g_totalNodes = 0;
 			g_timeout = time;
+			g_depthout = depth;
 			g_nodeout = nodes;
+			if (mu.Count == 1)
+				g_depthout = 1;
 			int os;
 			g_mainDepth = 1;
 			do
 			{
 				bsDepth = 0;
-				os = Search(mu, 1, g_mainDepth, -0xffff, 0xffff);
+				os = Search(mu, 1, g_mainDepth - 1, -0xffff, 0xffff);
 				double t = stopwatch.Elapsed.TotalMilliseconds;
 				double nps = 0;
 				if (t > 0)
