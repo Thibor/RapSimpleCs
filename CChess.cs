@@ -1022,8 +1022,6 @@ namespace RapSimpleCs
 			g_timeout = time;
 			g_depthout = depth;
 			g_nodeout = nodes;
-			if (mu.Count == 1)
-				g_depthout = 1;
 			int os;
 			g_mainDepth = 1;
 			do
