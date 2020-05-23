@@ -980,11 +980,11 @@ namespace RapSimpleCs
 					if (ply == 1)
 					{
 						if (osScore > 0xf000)
-							g_scoreFm = "mate " + ((0xffff - osScore) >> 1);
+							g_scoreFm = $"mate {(0xffff - osScore) >> 1}";
 						else if (osScore < -0xf000)
-							g_scoreFm = "mate " + ((-0xfffe - osScore) >> 1);
+							g_scoreFm = $"mate {(-0xfffe - osScore) >> 1}";
 						else
-							g_scoreFm = "cp " + (osScore >> 2);
+							g_scoreFm = $"cp {osScore >> 2}";
 						bsFm = alphaFm;
 						bsPv = alphaPv;
 						bsDepth = alphaDe;
