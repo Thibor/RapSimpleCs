@@ -12,7 +12,7 @@ namespace RapSimpleCs
 
 			while (true)
 			{
-				string msg = CReader.ReadLine(true);
+				string msg = Console.ReadLine();
 				Uci.SetMsg(msg);
 				switch (Uci.command)
 				{
@@ -67,7 +67,8 @@ namespace RapSimpleCs
 						int time = Uci.GetInt("movetime", 0);
 						int depth = Uci.GetInt("depth", 0);
 						int node = Uci.GetInt("nodes", 0);
-						if ((time == 0) && (depth == 0) && (node == 0))
+						int infinite = Uci.GetIndex("infinite", 0);
+						if ((time == 0) && (depth == 0) && (node == 0) && (infinite == 0))
 						{
 							time = Chess.whiteTurn ? Uci.GetInt("wtime", 0) : Uci.GetInt("btime", 0);
 							double mg = Uci.GetInt("movestogo", Chess.g_phase << 1);
@@ -81,9 +82,13 @@ namespace RapSimpleCs
 							if (time < 0x20)
 								time = 1;
 						}
-						Chess.Start(depth, time, node);
+						Chess.StartThread(depth, time, node);
+						break;
+					case "stop":
+						Chess.synStop.SetStop(true);
 						break;
 					case "quit":
+						Chess.synStop.SetStop(true);
 						return;
 				}
 

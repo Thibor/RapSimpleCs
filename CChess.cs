@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 
 namespace RapSimpleCs
 {
@@ -24,6 +25,9 @@ namespace RapSimpleCs
 		const int moveflagPromoteBishop = 0x40 << 16;
 		const int moveflagPromoteKnight = 0x80 << 16;
 		const int maskCastle = moveflagCastleKing | moveflagCastleQueen;
+		int inTime = 0;
+		int inDepth = 0;
+		int inNodes = 0;
 		int g_castleRights = 0xf;
 		int g_depth = 0;
 		int g_hash = 0;
@@ -71,12 +75,7 @@ namespace RapSimpleCs
 		int[] tmpIsolated = new int[2] { -5, -15 };
 		int[] tmpDoubled = new int[2] { -11, -56 };
 		int[] tmpBackward = new int[2] { -9, -24 };
-		int[] tmpWeakU = new int[2] { -13, -27 };
-		int[] tmpWeakL = new int[2] { 0, -56 };
-		int[] tmpWeakQueen = new int[2] { -49, -15 };
-		int[] tmpRookOnQueen = new int[2] { 7, 6 };
 		int[,] tmpOutpost = new int[3, 2] { { 32, 10 }, { 30, 21 }, { 60, 42 } };
-		int[,] tmpRookFile = new int[3, 2] { { 0, 0 }, { 21, 4 }, { 47, 25 } };
 		int[,] tmpCenter = new int[6, 2] { { 4, 2 }, { 8, 8 }, { 4, 8 }, { -8, 8 }, { -8, 0xf }, { -8, 8 } };
 		int[] tmpPassedFile = new int[8] { 0, -8, -16, -24, -24, -16, -8, 0 };
 		int[] tmpPassedRank = new int[8] { 0, 5, 5, 30, 70, 150, 250, 0 };
@@ -103,8 +102,10 @@ namespace RapSimpleCs
 		int[] arrDirRook = { 1, -1, 16, -16 };
 		int[] arrDirQueen = { 1, -1, 15, -15, 16, -16, 17, -17 };
 		CUndo[] undoStack = new CUndo[0xfff];
+		Thread startThread;
 		public Stopwatch stopwatch = Stopwatch.StartNew();
 		private static readonly Random random = new Random();
+		public CSynStop synStop = new CSynStop();
 
 		public CChess()
 		{
@@ -193,7 +194,6 @@ namespace RapSimpleCs
 				for (int y = 0; y < 8; y++)
 				{
 					int iw = (y << 3) | x;
-					int ib = ((7 - y) << 3) | x;
 					for (int n = 0; n < 8; n++)
 						if (n != y)
 							CBitBoard.Add(ref bbFile[iw], x, n);
@@ -267,6 +267,7 @@ namespace RapSimpleCs
 
 		public void InitializeFromFen(string fen)
 		{
+			synStop.SetStop(false);
 			g_phase = 0;
 			for (int n = 0; n < 64; n++)
 				g_board[arrFieldL[n]] = colorEmpty;
@@ -891,7 +892,6 @@ namespace RapSimpleCs
 			if (enInsufficient && usInsufficient)
 				return 0;
 			int alphaDe = 0;
-			string alphaFm = "";
 			string alphaPv = "";
 			if (score >= beta)
 				return beta;
@@ -901,7 +901,8 @@ namespace RapSimpleCs
 			while (index-- > 0)
 			{
 				if ((++g_totalNodes & 0x1fff) == 0)
-					g_stop = GetStop();
+					if (GetStop() || synStop.GetStop())
+						g_stop = true;
 				int cm = mu[index];
 				MakeMove(cm);
 				g_depth = 0;
@@ -924,8 +925,7 @@ namespace RapSimpleCs
 				{
 					alpha = score;
 					alphaDe = g_depth + 1;
-					alphaFm = FormatMove(cm);
-					alphaPv = alphaFm + ' ' + g_pv;
+					alphaPv = $"{FormatMove(cm)}  {g_pv}";
 					if (alpha >= beta)
 						return beta;
 				}
@@ -939,7 +939,6 @@ namespace RapSimpleCs
 		{
 			int countCheck = 0;
 			int alphaDe = 0;
-			string alphaFm = "";
 			string alphaPv = "";
 			bool isCheck = IsAttacked(whiteTurn, kingPos);
 			if (isCheck)
@@ -948,9 +947,8 @@ namespace RapSimpleCs
 			{
 				int cm = mu[n];
 				if ((++g_totalNodes & 0x1fff) == 0)
-				{
-					g_stop = ((bsDepth > 0) && GetStop()) || (CReader.ReadLine(false) == "stop");
-				}
+					if ((bsDepth > 0) && (GetStop() || synStop.GetStop()))
+						g_stop = true;
 				MakeMove(cm);
 				g_depth = 0;
 				g_pv = "";
@@ -973,9 +971,9 @@ namespace RapSimpleCs
 				if (g_stop) return 0;
 				if (alpha < osScore)
 				{
+					string alphaFm = FormatMove(cm);
 					alpha = osScore;
-					alphaFm = FormatMove(cm);
-					alphaPv = alphaFm + ' ' + g_pv;
+					alphaPv = $"{ alphaFm} { g_pv}";
 					alphaDe = g_depth + 1;
 					if (ply == 1)
 					{
@@ -1032,14 +1030,28 @@ namespace RapSimpleCs
 				double t = stopwatch.Elapsed.TotalMilliseconds;
 				double nps = 0;
 				if (t > 0)
-					nps =(g_totalNodes / t) * 1000;
+					nps = (g_totalNodes / t) * 1000;
 				Console.WriteLine($"info depth {g_mainDepth} nodes {g_totalNodes} time {Convert.ToInt64(t)} nps {Convert.ToInt64(nps)}");
 				if (++g_mainDepth > depthLimit)
 					break;
-			} while (!GetStop() && (os > -0xf000) && (os < 0xf000) && !g_stop);
+			} while (!(GetStop() || synStop.GetStop()) && (os > -0xf000) && (os < 0xf000));
 			string[] ponder = bsPv.Split(' ');
 			string pm = ponder.Length > 1 ? $" ponder {ponder[1]}" : "";
 			Console.WriteLine($"bestmove {bsFm}{pm}");
+		}
+
+		public void Thread()
+		{
+			Start(inDepth, inTime, inNodes);
+		}
+
+		public void StartThread(int depth, int time, int nodes)
+		{
+			inDepth = depth;
+			inTime = time;
+			inNodes = nodes;
+			startThread = new Thread(Thread);
+			startThread.Start();
 		}
 
 	}

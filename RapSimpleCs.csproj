@@ -47,7 +47,7 @@
     <Compile Include="CBitBoard.cs" />
     <Compile Include="CChess.cs" />
     <Compile Include="CRapSimpleCs.cs" />
-    <Compile Include="CReader.cs" />
+    <Compile Include="CSynStop.cs" />
     <Compile Include="CUci.cs" />
     <Compile Include="CUndo.cs" />
   </ItemGroup>
