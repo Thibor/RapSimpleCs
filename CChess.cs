@@ -49,7 +49,6 @@ namespace RapSimpleCs
 		int[] arrFieldS = new int[256];
 		int[] g_board = new int[256];
 		int[,] g_hashBoard = new int[256, 16];
-		int[] boardCheck = new int[256];
 		int[] boardCastle = new int[256];
 		public bool whiteTurn = true;
 		int bestRank = 0;
@@ -122,7 +121,6 @@ namespace RapSimpleCs
 				}
 			for (int n = 0; n < 256; n++)
 			{
-				boardCheck[n] = 0;
 				boardCastle[n] = 15;
 				g_board[n] = 0;
 				for (int p = 0; p < 16; p++)
@@ -134,10 +132,7 @@ namespace RapSimpleCs
 			int[] arrCheckI = { 71, 72, 73, 183, 184, 185 };
 			int[] arrCheckV = { colorBlack | moveflagCastleQueen, colorBlack | maskCastle, colorBlack | moveflagCastleKing, colorWhite | moveflagCastleQueen, colorWhite | maskCastle, colorWhite | moveflagCastleKing };
 			for (int n = 0; n < 6; n++)
-			{
 				boardCastle[arrCastleI[n]] = arrCasteleV[n];
-				boardCheck[arrCheckI[n]] = arrCheckV[n];
-			}
 			for (int ph = 2; ph < 33; ph++)
 			{
 				double f = ph / 32.0;
