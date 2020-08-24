@@ -129,8 +129,6 @@ namespace RapSimpleCs
 			int[] arrRankCon = new int[8] { 0, 7, 8, 12, 29, 48, 86, 0 };
 			int[] arrCastleI = { 68, 72, 75, 180, 184, 187 };
 			int[] arrCasteleV = { 7, 3, 11, 13, 12, 14 };
-			int[] arrCheckI = { 71, 72, 73, 183, 184, 185 };
-			int[] arrCheckV = { colorBlack | moveflagCastleQueen, colorBlack | maskCastle, colorBlack | moveflagCastleKing, colorWhite | moveflagCastleQueen, colorWhite | maskCastle, colorWhite | moveflagCastleKing };
 			for (int n = 0; n < 6; n++)
 				boardCastle[arrCastleI[n]] = arrCasteleV[n];
 			for (int ph = 2; ph < 33; ph++)
