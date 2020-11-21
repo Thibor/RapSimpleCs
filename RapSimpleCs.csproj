@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{B741286E-CB60-42D9-AFBE-95E06BB63CB0}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>RapSimpleCs</RootNamespace>
+    <RootNamespace>Namespace</RootNamespace>
     <AssemblyName>RapSimpleCs</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -44,15 +44,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CBitBoard.cs" />
     <Compile Include="CChess.cs" />
     <Compile Include="CRapSimpleCs.cs" />
     <Compile Include="CSynStop.cs" />
     <Compile Include="CUci.cs" />
     <Compile Include="CUndo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

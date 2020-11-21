@@ -1,14 +1,15 @@
 ﻿using System;
 
-namespace RapSimpleCs
+namespace Namespace
 {
-	class CRapSimpleCs
+
+	class CRapSimple
 	{
 		static void Main()
 		{
-			string version = "2020-04-04";
-			CUci Uci = new CUci();
+			string version = "2020-11-01";
 			CChess Chess = new CChess();
+			CUci Uci = new CUci();
 
 			while (true)
 			{
@@ -17,7 +18,7 @@ namespace RapSimpleCs
 				switch (Uci.command)
 				{
 					case "uci":
-						Console.WriteLine("id name RapSimpleCs " + version);
+						Console.WriteLine($"id name RapShortCs {version}");
 						Console.WriteLine("id author Thibor Raven");
 						Console.WriteLine("id link https://github.com/Thibor/RapSimpleCs");
 						Console.WriteLine("uciok");
@@ -32,31 +33,25 @@ namespace RapSimpleCs
 						if (lo > 0)
 						{
 							if (lo > hi)
-							{
 								hi = Uci.tokens.Length;
-							}
 							for (int n = lo; n < hi; n++)
 							{
 								if (n > lo)
-								{
 									fen += ' ';
-								}
 								fen += Uci.tokens[n];
 							}
 						}
-						Chess.InitializeFromFen(fen);
+						Chess.SetFen(fen);
 						lo = Uci.GetIndex("moves", 0);
 						hi = Uci.GetIndex("fen", Uci.tokens.Length);
 						if (lo > 0)
 						{
 							if (lo > hi)
-							{
 								hi = Uci.tokens.Length;
-							}
 							for (int n = lo; n < hi; n++)
 							{
 								string m = Uci.tokens[n];
-								Chess.MakeMove(Chess.GetMoveFromString(m));
+								Chess.MakeMove(Chess.UmoToEmo(m));
 								if (Chess.g_move50 == 0)
 									Chess.undoIndex = 0;
 							}
@@ -71,15 +66,9 @@ namespace RapSimpleCs
 						if ((time == 0) && (depth == 0) && (node == 0) && (infinite == 0))
 						{
 							time = Chess.whiteTurn ? Uci.GetInt("wtime", 0) : Uci.GetInt("btime", 0);
-							double mg = Uci.GetInt("movestogo", Chess.g_phase << 1);
+							double mg = Uci.GetInt("movestogo", 0x40);
 							time = Convert.ToInt32(time / mg);
 							if (time < 1)
-								time = 1;
-						}
-						if (time > 0)
-						{
-							time -= 0x20;
-							if (time < 0x20)
 								time = 1;
 						}
 						Chess.StartThread(depth, time, node);

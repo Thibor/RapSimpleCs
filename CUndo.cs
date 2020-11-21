@@ -1,12 +1,12 @@
-﻿namespace RapSimpleCs
+﻿namespace Namespace
 {
-	struct CUndo
+	class CUndo
 	{
 		public int captured;
-		public int hash;
 		public int passing;
 		public int castle;
 		public int move50;
-		public int kingPos;
+		public int lastCastle;
+		public ulong hash;
 	}
 }
