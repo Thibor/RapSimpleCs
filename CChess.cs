@@ -25,7 +25,6 @@ namespace Namespace
 		const int moveflagPromoteKnight = pieceKnight << 20;
 		const int maskColor = colorBlack | colorWhite;
 		const int maskPromotion = moveflagPromoteQueen | moveflagPromoteRook | moveflagPromoteBishop | moveflagPromoteKnight;
-		bool g_inCheck = false;
 		int inTime = 0;
 		int inDepth = 0;
 		int inNodes = 0;
@@ -142,11 +141,7 @@ namespace Namespace
 			int rank = g_board[to] & 7;
 			int m = fr | (to << 8) | flag;
 			if (rank > 0)
-			{
-				if (rank == pieceKing)
-					g_inCheck = true;
 				moves.Add(m);
-			}
 			else
 				moves.Insert(0, m);
 		}
@@ -449,7 +444,6 @@ namespace Namespace
 
 		List<int> GenerateAllMoves(bool wt, bool attack, out int score, out bool insufficient)
 		{
-			g_inCheck = false;
 			score = 0;
 			int usColor = wt ? colorWhite : colorBlack;
 			int enColor = wt ? colorBlack : colorWhite;
@@ -563,10 +557,10 @@ namespace Namespace
 			int neDe = 0;
 			string nePv = "";
 			GenerateAllMoves(!whiteTurn, true, out int enScore, out bool enInsufficient);
-			int score = usScore - enScore;
 			if (usInsufficient && enInsufficient)
-				score = 0;
-			else if (usInsufficient != enInsufficient)
+				return 0;
+			int score = usScore - enScore;
+			if (usInsufficient != enInsufficient)
 				score += usInsufficient ? -400 : 400;
 			if (depth < 1)
 				return score;
@@ -584,11 +578,11 @@ namespace Namespace
 						g_stop = true;
 				int cm = usm[index];
 				MakeMove(cm);
-				List<int> enm = GenerateAllMoves(whiteTurn, true, out enScore, out enInsufficient);
-				if (g_inCheck)
+				if (IsAttacked(!whiteTurn, kingPos[whiteTurn ? 0 : 1]))
 					score = -0xffff;
-				else
-					score = -Quiesce(enm, ply + 1, depth - 1, -beta, -alpha, enScore, enInsufficient, ref alDe, ref alPv);
+				else {
+					List<int> enm = GenerateAllMoves(whiteTurn, true, out enScore, out enInsufficient);
+					score = -Quiesce(enm, ply + 1, depth - 1, -beta, -alpha, enScore, enInsufficient, ref alDe, ref alPv); }
 				UnmakeMove(cm);
 				if (g_stop) return -0xffff;
 				if (score >= beta)
@@ -636,15 +630,18 @@ namespace Namespace
 					if (GetStop() || synStop.GetStop())
 						g_stop = true;
 				MakeMove(cm);
-				bool enCheck = IsAttacked(whiteTurn, kingPos[whiteTurn ? 1 : 0]);
-				List<int> enm = GenerateAllMoves(whiteTurn, (depth < 2) && !enCheck, out int enScore, out bool enInsufficient);
 				int score = -0xffff;
-				if (g_inCheck)
+				if (IsAttacked(!whiteTurn, kingPos[whiteTurn ? 0 : 1]))
 					myMoves--;
-				else if ((g_move50 > 99) || IsRepetition() || (usInsufficient && enInsufficient))
-					score = 0;
 				else
-					score = -Search(enm, ply + 1, depth - 1, -beta, -alpha, enScore, enInsufficient, enCheck, ref alDe, ref alPv, out _);
+				{
+					bool enCheck = IsAttacked(whiteTurn, kingPos[whiteTurn ? 1 : 0]);
+					List<int> enm = GenerateAllMoves(whiteTurn, (depth < 2) && !enCheck, out int enScore, out bool enInsufficient);
+					if ((g_move50 > 99) || IsRepetition() || (usInsufficient && enInsufficient))
+						score = 0;
+					else
+						score = -Search(enm, ply + 1, depth - 1, -beta, -alpha, enScore, enInsufficient, enCheck, ref alDe, ref alPv, out _);
+				}
 				UnmakeMove(cm);
 				if (g_stop) return -0xffff;
 				if (score >= beta)
