@@ -7,7 +7,7 @@ namespace Namespace
 	{
 		static void Main()
 		{
-			string version = "2020-11-01";
+			string version = "2020-12-01";
 			CChess Chess = new CChess();
 			CUci Uci = new CUci();
 

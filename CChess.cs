@@ -89,7 +89,7 @@ namespace Namespace
 
 		string EmoToUmo(int emo)
 		{
-			string result = FormatSquare(emo & 0xFF) + FormatSquare((emo >> 8) & 0xFF);
+			string result = SquareToStr(emo & 0xFF) + SquareToStr((emo >> 8) & 0xFF);
 			int promotion = emo & maskPromotion;
 			if (promotion > 0)
 			{
@@ -112,7 +112,25 @@ namespace Namespace
 			return 0;
 		}
 
-		string FormatSquare(int square)
+		string SquareToStr(int square)
+		{
+			int x = (square & 0xf) - 4;
+			int y = (square >> 4) - 4;
+			string xs = "abcdefgh";
+			string ys = "87654321";
+			return $"{xs[x]}{ys[y]}";
+		}
+
+		int StrToSquare(string s)
+		{
+			string xs = "abcdefgh";
+			string ys = "87654321";
+			int x = xs.IndexOf(s[0]);
+			int y = ys.IndexOf(s[1]);
+			return ((y + 4) << 4) | (x + 4);
+		}
+
+		/*string SquareToStr(int square)
 		{
 			char[] arr = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
 			return arr[(square & 0xf) - 4] + (12 - (square >> 4)).ToString();
@@ -124,7 +142,7 @@ namespace Namespace
 			int x = fl.IndexOf(s[0]);
 			int y = 12 - Int32.Parse(s[1].ToString());
 			return (x + 4) | (y << 4);
-		}
+		}*/
 
 		bool IsRepetition()
 		{
