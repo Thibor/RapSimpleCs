@@ -28,18 +28,18 @@ namespace Namespace
 		int inTime = 0;
 		int inDepth = 0;
 		int inNodes = 0;
-		int g_castleRights = 0xf;
-		ulong g_hash = 0;
-		int g_passing = 0;
-		public int g_move50 = 0;
-		int g_moveNumber = 0;
+		int castleRights = 0xf;
+		ulong hash = 0;
+		int passing = 0;
+		public int move50 = 0;
+		int halfMove = 0;
 		int g_totalNodes = 0;
 		int g_timeout = 0;
 		int g_depthout = 0;
 		int g_nodeout = 0;
 		int g_mainDepth = 1;
 		bool g_stop = false;
-		int g_lastCastle = colorEmpty;
+		int lastCastle = colorEmpty;
 		public int undoIndex = 0;
 		readonly int[] arrField = new int[64];
 		readonly int[] g_board = new int[256];
@@ -47,15 +47,15 @@ namespace Namespace
 		readonly int[] boardCastle = new int[256];
 		public bool whiteTurn = true;
 		int bsIn = -1;
-		string bsFm = "";
-		string bsPv = "";
+		string bsFm = String.Empty;
+		string bsPv = String.Empty;
 		readonly int[] kingPos = new int[2];
 		readonly int[] bonMaterial = new int[7] { 0, 100, 300, 310, 500, 800, 0xffff };
 		readonly int[] arrDirKinght = { 14, -14, 18, -18, 31, -31, 33, -33 };
 		readonly int[] arrDirBishop = { 15, -15, 17, -17 };
 		readonly int[] arrDirRook = { 1, -1, 16, -16 };
 		readonly int[] arrDirQueen = { 1, -1, 15, -15, 16, -16, 17, -17 };
-		public static Random random = new Random();
+		public static Random rnd = new Random();
 		readonly CUndo[] undoStack = new CUndo[0xfff];
 		Thread startThread;
 		public Stopwatch stopwatch = Stopwatch.StartNew();
@@ -63,7 +63,7 @@ namespace Namespace
 
 		public CChess()
 		{
-			g_hash = RAND_32();
+			hash = RAND_32();
 			for (int n = 0; n < undoStack.Length; n++)
 				undoStack[n] = new CUndo();
 			for (int y = 0; y < 8; y++)
@@ -84,7 +84,7 @@ namespace Namespace
 
 		ulong RAND_32()
 		{
-			return ((ulong)random.Next() << 32) | ((ulong)random.Next() << 0);
+			return ((ulong)rnd.Next() << 32) | ((ulong)rnd.Next() << 0);
 		}
 
 		string EmoToUmo(int emo)
@@ -130,24 +130,10 @@ namespace Namespace
 			return ((y + 4) << 4) | (x + 4);
 		}
 
-		/*string SquareToStr(int square)
-		{
-			char[] arr = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
-			return arr[(square & 0xf) - 4] + (12 - (square >> 4)).ToString();
-		}
-
-		int StrToSquare(string s)
-		{
-			string fl = "abcdefgh";
-			int x = fl.IndexOf(s[0]);
-			int y = 12 - Int32.Parse(s[1].ToString());
-			return (x + 4) | (y << 4);
-		}*/
-
 		bool IsRepetition()
 		{
-			for (int n = undoIndex - 2; n >= undoIndex - g_move50; n -= 2)
-				if (undoStack[n].hash == g_hash)
+			for (int n = undoIndex - 2; n >= undoIndex - move50; n -= 2)
+				if (undoStack[n].hash == hash)
 				{
 					return true;
 				}
@@ -207,13 +193,14 @@ namespace Namespace
 			return moves.Count - cm;
 		}
 
-		public void SetFen(string fen)
+		public void SetFen(string fen = "")
 		{
-			g_lastCastle = colorEmpty;
+			lastCastle = colorEmpty;
 			synStop.SetStop(false);
 			for (int n = 0; n < 64; n++)
 				g_board[arrField[n]] = colorEmpty;
-			if (fen == "") fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+			if (String.IsNullOrEmpty(fen))
+				fen = Constants.fen;
 			string[] chunks = fen.Split(' ');
 			int row = 0;
 			int col = 0;
@@ -263,24 +250,24 @@ namespace Namespace
 				}
 			}
 			whiteTurn = chunks[1] == "w";
-			g_castleRights = 0;
+			castleRights = 0;
 			if (chunks[2].IndexOf('K') != -1)
-				g_castleRights |= 1;
+				castleRights |= 1;
 			if (chunks[2].IndexOf('Q') != -1)
-				g_castleRights |= 2;
+				castleRights |= 2;
 			if (chunks[2].IndexOf('k') != -1)
-				g_castleRights |= 4;
+				castleRights |= 4;
 			if (chunks[2].IndexOf('q') != -1)
-				g_castleRights |= 8;
-			g_passing = 0;
+				castleRights |= 8;
+			passing = 0;
 			if (chunks[3].IndexOf('-') == -1)
-				g_passing = StrToSquare(chunks[3]);
-			g_move50 = 0;
-			g_moveNumber = Int32.Parse(chunks[5]);
-			if (g_moveNumber > 0) g_moveNumber--;
-			g_moveNumber *= 2;
-			if (!whiteTurn) g_moveNumber++;
-			undoIndex = g_move50;
+				passing = StrToSquare(chunks[3]);
+			move50 = 0;
+			halfMove = Int32.Parse(chunks[5]);
+			if (halfMove > 0) halfMove--;
+			halfMove *= 2;
+			if (!whiteTurn) halfMove++;
+			undoIndex = move50;
 		}
 
 		public void MakeMove(int move)
@@ -292,16 +279,16 @@ namespace Namespace
 			int rank = piecefr & 7;
 			int piece = piecefr & 0xf;
 			int captured = g_board[to];
-			g_lastCastle = colorEmpty;
+			lastCastle = colorEmpty;
 			if ((flags & moveflagCastleKing) > 0)
 			{
-				g_lastCastle = moveflagCastleKing | (piecefr & maskColor);
+				lastCastle = moveflagCastleKing | (piecefr & maskColor);
 				g_board[to - 1] = g_board[to + 1];
 				g_board[to + 1] = colorEmpty;
 			}
 			else if ((flags & moveflagCastleQueen) > 0)
 			{
-				g_lastCastle = moveflagCastleQueen | (piecefr & maskColor);
+				lastCastle = moveflagCastleQueen | (piecefr & maskColor);
 				g_board[to + 1] = g_board[to - 2];
 				g_board[to - 2] = colorEmpty;
 			}
@@ -313,40 +300,40 @@ namespace Namespace
 			}
 			ref CUndo undo = ref undoStack[undoIndex++];
 			undo.captured = captured;
-			undo.hash = g_hash;
-			undo.passing = g_passing;
-			undo.castle = g_castleRights;
-			undo.move50 = g_move50;
-			undo.lastCastle = g_lastCastle;
-			g_hash ^= g_hashBoard[fr, piece];
-			g_passing = 0;
+			undo.hash = hash;
+			undo.passing = passing;
+			undo.castle = castleRights;
+			undo.move50 = move50;
+			undo.lastCastle = lastCastle;
+			hash ^= g_hashBoard[fr, piece];
+			passing = 0;
 			if (captured != colorEmpty)
-				g_move50 = 0;
+				move50 = 0;
 			else if (rank == piecePawn)
 			{
-				if (to == (fr + 32)) g_passing = (fr + 16);
-				if (to == (fr - 32)) g_passing = (fr - 16);
-				g_move50 = 0;
+				if (to == (fr + 32)) passing = (fr + 16);
+				if (to == (fr - 32)) passing = (fr - 16);
+				move50 = 0;
 			}
 			else
-				g_move50++;
+				move50++;
 			if ((flags & maskPromotion) > 0)
 			{
 				int newPiece = ((piecefr & (~0x7)) | (flags >> 20));
 				g_board[to] = newPiece;
-				g_hash ^= g_hashBoard[to, newPiece & 0xf];
+				hash ^= g_hashBoard[to, newPiece & 0xf];
 			}
 			else
 			{
 				g_board[to] = g_board[fr];
-				g_hash ^= g_hashBoard[to, piece];
+				hash ^= g_hashBoard[to, piece];
 			}
 			if (rank == pieceKing)
 				kingPos[whiteTurn ? 1 : 0] = to;
 			g_board[fr] = colorEmpty;
-			g_castleRights &= boardCastle[fr] & boardCastle[to];
+			castleRights &= boardCastle[fr] & boardCastle[to];
 			whiteTurn ^= true;
-			g_moveNumber++;
+			halfMove++;
 		}
 
 		void UnmakeMove(int move)
@@ -356,11 +343,11 @@ namespace Namespace
 			int flags = move & 0xFF0000;
 			int capi = to;
 			CUndo undo = undoStack[--undoIndex];
-			g_passing = undo.passing;
-			g_castleRights = undo.castle;
-			g_move50 = undo.move50;
-			g_lastCastle = undo.lastCastle;
-			g_hash = undo.hash;
+			passing = undo.passing;
+			castleRights = undo.castle;
+			move50 = undo.move50;
+			lastCastle = undo.lastCastle;
+			hash = undo.hash;
 			int captured = undo.captured;
 			if ((flags & moveflagCastleKing) > 0)
 			{
@@ -390,7 +377,7 @@ namespace Namespace
 			}
 			g_board[capi] = captured;
 			whiteTurn ^= true;
-			g_moveNumber--;
+			halfMove--;
 		}
 
 		bool GetStop()
@@ -507,12 +494,12 @@ namespace Namespace
 							}
 							if ((g_board[to - 1] & enColor) > 0)
 								GeneratePwnMoves(moves, fr, to - 1, 0);
-							else if ((to - 1) == g_passing)
-								GeneratePwnMoves(moves, fr, g_passing, moveflagPassing);
+							else if ((to - 1) == passing)
+								GeneratePwnMoves(moves, fr, passing, moveflagPassing);
 							if ((g_board[to + 1] & enColor) > 0)
 								GeneratePwnMoves(moves, fr, to + 1, 0);
-							else if ((to + 1) == g_passing)
-								GeneratePwnMoves(moves, fr, g_passing, moveflagPassing);
+							else if ((to + 1) == passing)
+								GeneratePwnMoves(moves, fr, passing, moveflagPassing);
 							if (pawnDistance > 1)
 							{
 								dx = Math.Abs((kp & 0xf) - (fr & 0xf));
@@ -542,7 +529,7 @@ namespace Namespace
 							kpx = x;
 							kpy = y;
 							GenerateUniMoves(moves, attack, fr, arrDirQueen, 1, enColor, ref score);
-							int cr = wt ? g_castleRights : g_castleRights >> 2;
+							int cr = wt ? castleRights : castleRights >> 2;
 							if ((cr & 1) > 0)
 								if (((g_board[fr + 1] & colorEmpty) > 0) && ((g_board[fr + 2] & colorEmpty) > 0) && !IsAttacked(wt, fr) && !IsAttacked(wt, fr + 1) && !IsAttacked(wt, fr + 2))
 									AddMove(moves, fr, fr + 2, moveflagCastleKing);
@@ -598,9 +585,11 @@ namespace Namespace
 				MakeMove(cm);
 				if (IsAttacked(!whiteTurn, kingPos[whiteTurn ? 0 : 1]))
 					score = -0xffff;
-				else {
+				else
+				{
 					List<int> enm = GenerateAllMoves(whiteTurn, true, out enScore, out enInsufficient);
-					score = -Quiesce(enm, ply + 1, depth - 1, -beta, -alpha, enScore, enInsufficient, ref alDe, ref alPv); }
+					score = -Quiesce(enm, ply + 1, depth - 1, -beta, -alpha, enScore, enInsufficient, ref alDe, ref alPv);
+				}
 				UnmakeMove(cm);
 				if (g_stop) return -0xffff;
 				if (score >= beta)
@@ -655,7 +644,7 @@ namespace Namespace
 				{
 					bool enCheck = IsAttacked(whiteTurn, kingPos[whiteTurn ? 1 : 0]);
 					List<int> enm = GenerateAllMoves(whiteTurn, (depth < 2) && !enCheck, out int enScore, out bool enInsufficient);
-					if ((g_move50 > 99) || IsRepetition() || (usInsufficient && enInsufficient))
+					if ((move50 > 99) || IsRepetition() || (usInsufficient && enInsufficient))
 						score = 0;
 					else
 						score = -Search(enm, ply + 1, depth - 1, -beta, -alpha, enScore, enInsufficient, enCheck, ref alDe, ref alPv, out _);

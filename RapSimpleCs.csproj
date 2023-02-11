@@ -33,6 +33,9 @@
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>rapsimplecs.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -45,13 +48,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CChess.cs" />
-    <Compile Include="CRapSimpleCs.cs" />
+    <Compile Include="Constants.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="CSynStop.cs" />
     <Compile Include="CUci.cs" />
     <Compile Include="CUndo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="rapsimplecs.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
